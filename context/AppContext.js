@@ -2,6 +2,9 @@
 
 import React, { createContext, useState, useEffect } from "react";
 import { defaultProducts } from "../data/products";
+import { createClient } from "../utils/supabase/client";
+
+const supabase = createClient();
 
 export const AppContext = createContext();
 
@@ -18,14 +21,36 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     setIsClient(true);
 
-    // Initialize products database
-    let storedProducts = localStorage.getItem("minishop_products");
-    if (!storedProducts) {
-      localStorage.setItem("minishop_products", JSON.stringify(defaultProducts));
-      setProducts(defaultProducts);
-    } else {
-      setProducts(JSON.parse(storedProducts));
-    }
+    // Initialize products database from Supabase, fallback to localStorage
+    const fetchProducts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("Product")
+          .select("*")
+          .order("id", { ascending: true });
+        
+        if (error) {
+          console.error("Error loading products from Supabase:", error);
+          const stored = localStorage.getItem("minishop_products");
+          if (stored) {
+            setProducts(JSON.parse(stored));
+          } else {
+            setProducts(defaultProducts);
+          }
+        } else if (data && data.length > 0) {
+          setProducts(data);
+          localStorage.setItem("minishop_products", JSON.stringify(data));
+        } else {
+          setProducts(defaultProducts);
+        }
+      } catch (err) {
+        console.error("Failed to fetch products:", err);
+        const stored = localStorage.getItem("minishop_products");
+        if (stored) setProducts(JSON.parse(stored));
+      }
+    };
+
+    fetchProducts();
 
     // Initialize cart
     let storedCart = localStorage.getItem("minishop_cart");
@@ -296,21 +321,69 @@ export const AppProvider = ({ children }) => {
   };
 
   // --- Admin Actions ---
-  const adminAddProduct = (newProduct) => {
+  const adminAddProduct = async (newProduct) => {
+    // Add to Supabase Product table
+    const { error } = await supabase.from("Product").insert({
+      id: newProduct.id,
+      name: newProduct.name,
+      category: newProduct.category,
+      categoryName: newProduct.categoryName,
+      price: newProduct.price,
+      image: newProduct.image,
+      description: newProduct.description,
+      rating: newProduct.rating,
+      reviewsCount: newProduct.reviewsCount,
+      specs: newProduct.specs
+    });
+
+    if (error) {
+      console.error("Error inserting product in Supabase:", error);
+      showToast("Lỗi lưu sản phẩm lên cơ sở dữ liệu!", "error");
+      return;
+    }
+
     const updatedProducts = [...products, newProduct];
     setProducts(updatedProducts);
     localStorage.setItem("minishop_products", JSON.stringify(updatedProducts));
     showToast(`Đã thêm sản phẩm "${newProduct.name}"!`, "success");
   };
 
-  const adminUpdateProduct = (updatedProd) => {
+  const adminUpdateProduct = async (updatedProd) => {
+    // Update in Supabase Product table
+    const { error } = await supabase.from("Product").update({
+      name: updatedProd.name,
+      category: updatedProd.category,
+      categoryName: updatedProd.categoryName,
+      price: updatedProd.price,
+      image: updatedProd.image,
+      description: updatedProd.description,
+      rating: updatedProd.rating,
+      reviewsCount: updatedProd.reviewsCount,
+      specs: updatedProd.specs
+    }).eq("id", updatedProd.id);
+
+    if (error) {
+      console.error("Error updating product in Supabase:", error);
+      showToast("Lỗi cập nhật sản phẩm trên cơ sở dữ liệu!", "error");
+      return;
+    }
+
     const updatedProducts = products.map(p => p.id === updatedProd.id ? updatedProd : p);
     setProducts(updatedProducts);
     localStorage.setItem("minishop_products", JSON.stringify(updatedProducts));
     showToast(`Đã cập nhật sản phẩm "${updatedProd.name}"!`, "success");
   };
 
-  const adminDeleteProduct = (productId) => {
+  const adminDeleteProduct = async (productId) => {
+    // Delete from Supabase Product table
+    const { error } = await supabase.from("Product").delete().eq("id", productId);
+
+    if (error) {
+      console.error("Error deleting product from Supabase:", error);
+      showToast("Lỗi xóa sản phẩm trên cơ sở dữ liệu!", "error");
+      return;
+    }
+
     const updatedProducts = products.filter(p => p.id !== productId);
     setProducts(updatedProducts);
     localStorage.setItem("minishop_products", JSON.stringify(updatedProducts));
