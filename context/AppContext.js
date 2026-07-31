@@ -65,7 +65,37 @@ export const AppProvider = ({ children }) => {
       if (session?.user) {
         const user = session.user;
         const metadata = user.user_metadata || {};
-        const role = user.email.toLowerCase() === "test@minishop.com" ? "admin" : "user";
+        
+        // Fetch role from Profile table on Supabase
+        let userRole = "user";
+        try {
+          const { data: profile, error: profileErr } = await supabase
+            .from("Profile")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+            
+          if (profileErr || !profile) {
+            // Profile does not exist yet (e.g. newly registered user), create it
+            const { data: newProfile, error: createErr } = await supabase
+              .from("Profile")
+              .insert({
+                id: user.id,
+                email: user.email,
+                role: "user"
+              })
+              .select("role")
+              .single();
+              
+            if (!createErr && newProfile) {
+              userRole = newProfile.role;
+            }
+          } else {
+            userRole = profile.role;
+          }
+        } catch (err) {
+          console.error("Error retrieving user role:", err);
+        }
         
         const loggedIn = {
           id: user.id,
@@ -73,7 +103,7 @@ export const AppProvider = ({ children }) => {
           email: user.email,
           phone: metadata.phone || "",
           address: metadata.address || "",
-          role: role
+          role: userRole
         };
         setLoggedInUser(loggedIn);
         localStorage.setItem("minishop_logged_in_user", JSON.stringify(loggedIn));
@@ -239,7 +269,22 @@ export const AppProvider = ({ children }) => {
     }
 
     const user = data.user;
-    const role = user.email.toLowerCase() === "test@minishop.com" ? "admin" : "user";
+    
+    // Fetch role from Profile table on Supabase
+    let role = "user";
+    try {
+      const { data: profile } = await supabase
+        .from("Profile")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      if (profile) {
+        role = profile.role;
+      }
+    } catch (err) {
+      console.error("Error retrieving user role on login:", err);
+    }
+
     showToast(`Chào mừng bạn quay lại!`, "success");
     return role;
   };

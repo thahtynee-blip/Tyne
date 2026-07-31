@@ -39,3 +39,10 @@ model Order {
   items        Json
   createdAt    DateTime @default(now())
 }
+
+model Profile {
+  id        String   @id
+  email     String   @unique
+  role      String   @default("user")
+  createdAt DateTime @default(now())
+}
