@@ -37,11 +37,16 @@ export default function LoginPage() {
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (!loginEmail.trim() || !loginPassword.trim()) {
-      alert("Vui lòng điền đầy đủ email và mật khẩu!");
+      alert("Vui lòng điền đầy đủ email/tên đăng nhập và mật khẩu!");
       return;
     }
 
-    const role = await loginUser(loginEmail.trim(), loginPassword);
+    let finalEmail = loginEmail.trim();
+    if (!finalEmail.includes("@")) {
+      finalEmail = `${finalEmail.toLowerCase().replace(/\s+/g, '')}@minishop.local`;
+    }
+
+    const role = await loginUser(finalEmail, loginPassword);
     if (role === "admin") {
       router.push("/admin");
     } else if (role === "user") {
@@ -57,16 +62,36 @@ export default function LoginPage() {
       alert("Họ tên không được để trống!");
       return;
     }
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(registerEmail.trim())) {
-      alert("Địa chỉ email không hợp lệ!");
+    const emailOrUser = registerEmail.trim();
+    if (!emailOrUser) {
+      alert("Tên đăng nhập hoặc Email không được để trống!");
       return;
     }
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(registerPhone.trim())) {
-      alert("Số điện thoại phải đủ 10 chữ số!");
-      return;
+
+    let finalEmail = emailOrUser;
+    if (emailOrUser.includes("@")) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailOrUser)) {
+        alert("Địa chỉ email không hợp lệ!");
+        return;
+      }
+    } else {
+      if (emailOrUser.length < 3) {
+        alert("Tên đăng nhập phải chứa ít nhất 3 ký tự!");
+        return;
+      }
+      finalEmail = `${emailOrUser.toLowerCase().replace(/\s+/g, '')}@minishop.local`;
     }
+
+    const phone = registerPhone.trim();
+    if (phone) {
+      const phoneRegex = /^[0-9]{10}$/;
+      if (!phoneRegex.test(phone)) {
+        alert("Số điện thoại phải đủ 10 chữ số!");
+        return;
+      }
+    }
+
     if (registerPassword.length < 6) {
       alert("Mật khẩu phải chứa ít nhất 6 ký tự!");
       return;
@@ -82,8 +107,8 @@ export default function LoginPage() {
 
     const success = await registerUser({
       name: registerName.trim(),
-      email: registerEmail.trim(),
-      phone: registerPhone.trim(),
+      email: finalEmail,
+      phone: phone,
       password: registerPassword,
       address: ""
     });
@@ -132,15 +157,15 @@ export default function LoginPage() {
           /* LOGIN FORM */
           <form className="auth-form" onSubmit={handleLoginSubmit} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
             <div className="form-group">
-              <label htmlFor="login-email">Địa chỉ Email</label>
+              <label htmlFor="login-email">Tên đăng nhập hoặc Email</label>
               <div className="form-input-wrapper" style={{ position: "relative" }}>
                 <i className="fa-regular fa-envelope" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }}></i>
                 <input
-                  type="email"
+                  type="text"
                   id="login-email"
                   className="form-control"
                   style={{ width: "100%", padding: "12px 16px 12px 46px", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "var(--border-radius-sm)", outline: "none" }}
-                  placeholder="name@domain.com"
+                  placeholder="Ví dụ: tuyen2103 hoặc email@example.com"
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
                   required
@@ -194,15 +219,15 @@ export default function LoginPage() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-email">Địa chỉ Email</label>
+              <label htmlFor="register-email">Tên đăng nhập hoặc Email</label>
               <div className="form-input-wrapper" style={{ position: "relative" }}>
                 <i className="fa-regular fa-envelope" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }}></i>
                 <input
-                  type="email"
+                  type="text"
                   id="register-email"
                   className="form-control"
                   style={{ width: "100%", padding: "12px 16px 12px 46px", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "var(--border-radius-sm)", outline: "none" }}
-                  placeholder="email@example.com"
+                  placeholder="Ví dụ: tuyen2103 hoặc email@example.com"
                   value={registerEmail}
                   onChange={(e) => setRegisterEmail(e.target.value)}
                   required
@@ -211,7 +236,7 @@ export default function LoginPage() {
             </div>
 
             <div className="form-group">
-              <label htmlFor="register-phone">Số Điện Thoại</label>
+              <label htmlFor="register-phone">Số Điện Thoại (Tùy chọn)</label>
               <div className="form-input-wrapper" style={{ position: "relative" }}>
                 <i className="fa-solid fa-phone" style={{ position: "absolute", left: "16px", top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)" }}></i>
                 <input
@@ -219,10 +244,9 @@ export default function LoginPage() {
                   id="register-phone"
                   className="form-control"
                   style={{ width: "100%", padding: "12px 16px 12px 46px", border: "1px solid rgba(0,0,0,0.1)", borderRadius: "var(--border-radius-sm)", outline: "none" }}
-                  placeholder="0987654321"
+                  placeholder="Ví dụ: 0987654321"
                   value={registerPhone}
                   onChange={(e) => setRegisterPhone(e.target.value)}
-                  required
                 />
               </div>
             </div>
