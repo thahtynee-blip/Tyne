@@ -251,6 +251,20 @@ export const AppProvider = ({ children }) => {
       showToast(error.message, "warning");
       return false;
     }
+
+    if (data.user) {
+      const user = data.user;
+      const loggedIn = {
+        id: user.id,
+        name: userData.name,
+        email: user.email,
+        phone: userData.phone,
+        address: userData.address || "",
+        role: "user"
+      };
+      setLoggedInUser(loggedIn);
+      localStorage.setItem("minishop_logged_in_user", JSON.stringify(loggedIn));
+    }
     
     showToast("Đăng ký tài khoản thành công!", "success");
     return true;
@@ -284,6 +298,18 @@ export const AppProvider = ({ children }) => {
     } catch (err) {
       console.error("Error retrieving user role on login:", err);
     }
+
+    const metadata = user.user_metadata || {};
+    const loggedIn = {
+      id: user.id,
+      name: metadata.name || user.email.split("@")[0],
+      email: user.email,
+      phone: metadata.phone || "",
+      address: metadata.address || "",
+      role: role
+    };
+    setLoggedInUser(loggedIn);
+    localStorage.setItem("minishop_logged_in_user", JSON.stringify(loggedIn));
 
     showToast(`Chào mừng bạn quay lại!`, "success");
     return role;
