@@ -2,8 +2,10 @@
 
 import React, { useContext, useState, useEffect } from "react";
 import { AppContext } from "../context/AppContext";
+import { useRouter } from "next/navigation";
 
 export default function CartModal({ isOpen, onClose }) {
+  const router = useRouter();
   const {
     isClient,
     cart,
@@ -41,6 +43,15 @@ export default function CartModal({ isOpen, onClose }) {
       alert("Giỏ hàng của bạn đang trống!");
       return;
     }
+    
+    // Force user to log in before checking out
+    if (!loggedInUser) {
+      alert("Vui lòng đăng nhập bằng Email và Số điện thoại trước khi thanh toán đơn hàng!");
+      onClose(); // Close cart modal
+      router.push("/login"); // Redirect to login
+      return;
+    }
+    
     setCheckoutStep("checkout");
   };
 
