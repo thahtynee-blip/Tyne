@@ -34,14 +34,14 @@ export default function LoginPage() {
     }
   }, [loggedInUser]);
 
-  const handleLoginSubmit = (e) => {
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     if (!loginEmail.trim() || !loginPassword.trim()) {
       alert("Vui lòng điền đầy đủ email và mật khẩu!");
       return;
     }
 
-    const role = loginUser(loginEmail.trim(), loginPassword);
+    const role = await loginUser(loginEmail.trim(), loginPassword);
     if (role === "admin") {
       router.push("/admin");
     } else if (role === "user") {
@@ -49,7 +49,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleRegisterSubmit = (e) => {
+  const handleRegisterSubmit = async (e) => {
     e.preventDefault();
 
     // Validations
@@ -80,7 +80,7 @@ export default function LoginPage() {
       return;
     }
 
-    const success = registerUser({
+    const success = await registerUser({
       name: registerName.trim(),
       email: registerEmail.trim(),
       phone: registerPhone.trim(),

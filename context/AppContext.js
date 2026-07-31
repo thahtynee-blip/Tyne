@@ -60,34 +60,28 @@ export const AppProvider = ({ children }) => {
     let storedWishlist = localStorage.getItem("minishop_wishlist");
     if (storedWishlist) setWishlist(JSON.parse(storedWishlist));
 
-    // Initialize users database
-    let storedUsers = localStorage.getItem("minishop_users");
-    if (storedUsers) {
-      setUsers(JSON.parse(storedUsers));
-    } else {
-      // Default test user
-      const defaultUsers = [
-        {
-          name: "Nguyễn Văn A",
-          email: "test@minishop.com",
-          phone: "0987654321",
-          password: "123456",
-          address: "123 Đường Trần Hưng Đạo, Quận 1, TP. Hồ Chí Minh"
-        }
-      ];
-      localStorage.setItem("minishop_users", JSON.stringify(defaultUsers));
-      setUsers(defaultUsers);
-    }
-
-    // Initialize logged in user
-    let storedUser = localStorage.getItem("minishop_logged_in_user");
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      if (parsedUser && parsedUser.email && parsedUser.email.toLowerCase() === "test@minishop.com") {
-        parsedUser.role = "admin";
+    // Listen to Supabase Auth state changes to manage loggedInUser session
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        const user = session.user;
+        const metadata = user.user_metadata || {};
+        const role = user.email.toLowerCase() === "test@minishop.com" ? "admin" : "user";
+        
+        const loggedIn = {
+          id: user.id,
+          name: metadata.name || user.email.split("@")[0],
+          email: user.email,
+          phone: metadata.phone || "",
+          address: metadata.address || "",
+          role: role
+        };
+        setLoggedInUser(loggedIn);
+        localStorage.setItem("minishop_logged_in_user", JSON.stringify(loggedIn));
+      } else {
+        setLoggedInUser(null);
+        localStorage.removeItem("minishop_logged_in_user");
       }
-      setLoggedInUser(parsedUser);
-    }
+    });
 
     // Initialize orders from Supabase, fallback to localStorage
     const fetchOrders = async () => {
@@ -113,6 +107,10 @@ export const AppProvider = ({ children }) => {
     };
 
     fetchOrders();
+
+    return () => {
+      if (subscription) subscription.unsubscribe();
+    };
   }, []);
 
   // --- Utility Toast Handler (Client side) ---
@@ -205,54 +203,52 @@ export const AppProvider = ({ children }) => {
   };
 
   // --- Authentication Actions ---
-  const registerUser = (userData) => {
-    // Check duplicate
-    if (users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
-      showToast("Email này đã được đăng ký!", "warning");
+  const registerUser = async (userData) => {
+    const { data, error } = await supabase.auth.signUp({
+      email: userData.email,
+      password: userData.password,
+      options: {
+        data: {
+          name: userData.name,
+          phone: userData.phone,
+          address: userData.address || ""
+        }
+      }
+    });
+
+    if (error) {
+      console.error("Register error:", error);
+      showToast(error.message, "warning");
       return false;
     }
-
-    const updatedUsers = [...users, userData];
-    setUsers(updatedUsers);
-    localStorage.setItem("minishop_users", JSON.stringify(updatedUsers));
     
-    // Automatically log in
-    setLoggedInUser(userData);
-    localStorage.setItem("minishop_logged_in_user", JSON.stringify(userData));
     showToast("Đăng ký tài khoản thành công!", "success");
     return true;
   };
 
-  const loginUser = (email, password) => {
-    // Check admin (case-insensitive email)
-    if (email && email.toLowerCase() === "test@minishop.com" && password === "123456") {
-      const adminSession = {
-        name: "Nguyễn Văn A",
-        email: "test@minishop.com",
-        phone: "0987654321",
-        address: "123 Đường Trần Hưng Đạo, Quận 1, TP. Hồ Chí Minh",
-        role: "admin"
-      };
-      setLoggedInUser(adminSession);
-      localStorage.setItem("minishop_logged_in_user", JSON.stringify(adminSession));
-      showToast("Đăng nhập thành công!", "success");
-      return "admin";
+  const loginUser = async (email, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      console.error("Login error:", error);
+      showToast(error.message, "warning");
+      return null;
     }
 
-    // Check client user
-    const found = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-    if (found) {
-      setLoggedInUser(found);
-      localStorage.setItem("minishop_logged_in_user", JSON.stringify(found));
-      showToast(`Chào mừng bạn quay lại, ${found.name}!`, "success");
-      return "user";
-    }
-
-    showToast("Email hoặc mật khẩu không chính xác.", "warning");
-    return null;
+    const user = data.user;
+    const role = user.email.toLowerCase() === "test@minishop.com" ? "admin" : "user";
+    showToast(`Chào mừng bạn quay lại!`, "success");
+    return role;
   };
 
-  const logoutUser = () => {
+  const logoutUser = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Logout error:", error);
+    }
     setLoggedInUser(null);
     localStorage.removeItem("minishop_logged_in_user");
     
@@ -265,52 +261,38 @@ export const AppProvider = ({ children }) => {
     showToast("Đã đăng xuất tài khoản.", "info");
   };
 
-  const updateProfile = (name, phone, address) => {
-    if (!loggedInUser) return;
-
-    const updatedUser = { ...loggedInUser, name, phone, address };
-    setLoggedInUser(updatedUser);
-    localStorage.setItem("minishop_logged_in_user", JSON.stringify(updatedUser));
-
-    // Update in users database
-    const updatedUsers = users.map(u => {
-      if (u.email.toLowerCase() === loggedInUser.email.toLowerCase()) {
-        return { ...u, name, phone, address };
-      }
-      return u;
+  const updateProfile = async (name, phone, address) => {
+    const { data, error } = await supabase.auth.updateUser({
+      data: { name, phone, address }
     });
-    setUsers(updatedUsers);
-    localStorage.setItem("minishop_users", JSON.stringify(updatedUsers));
-    showToast("Đã cập nhật thông tin tài khoản thành công!", "success");
-  };
 
-  const changePassword = (oldPassword, newPassword) => {
-    if (!loggedInUser) return false;
-
-    // Check in users db
-    const userIndex = users.findIndex(u => u.email.toLowerCase() === loggedInUser.email.toLowerCase());
-    
-    let dbPassword = "password123";
-    if (userIndex !== -1) {
-      dbPassword = users[userIndex].password;
+    if (error) {
+      console.error("Update profile error:", error);
+      showToast("Lỗi cập nhật hồ sơ trên máy chủ!", "error");
+      return;
     }
 
-    if (oldPassword !== dbPassword) {
-      showToast("Mật khẩu hiện tại không đúng.", "warning");
+    if (loggedInUser) {
+      const updatedUser = { ...loggedInUser, name, phone, address };
+      setLoggedInUser(updatedUser);
+      localStorage.setItem("minishop_logged_in_user", JSON.stringify(updatedUser));
+      showToast("Đã cập nhật thông tin tài khoản thành công!", "success");
+    }
+  };
+
+  const changePassword = async (oldPassword, newPassword) => {
+    const { data, error } = await supabase.auth.updateUser({
+      password: newPassword
+    });
+
+    if (error) {
+      console.error("Change password error:", error);
+      showToast(error.message, "warning");
       return false;
     }
 
-    if (userIndex !== -1) {
-      const updatedUsers = [...users];
-      updatedUsers[userIndex].password = newPassword;
-      setUsers(updatedUsers);
-      localStorage.setItem("minishop_users", JSON.stringify(updatedUsers));
-      showToast("Đổi mật khẩu thành công!", "success");
-      return true;
-    }
-
-    showToast("Tài khoản hệ thống thử nghiệm không thể đổi mật khẩu thật.", "info");
-    return false;
+    showToast("Đổi mật khẩu thành công!", "success");
+    return true;
   };
 
   // --- Order placement ---

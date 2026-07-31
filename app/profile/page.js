@@ -72,7 +72,7 @@ function ProfilePageContent() {
     updateProfile(name.trim(), phone.trim(), address.trim());
   };
 
-  const handleSecuritySubmit = (e) => {
+  const handleSecuritySubmit = async (e) => {
     e.preventDefault();
     if (newPassword.length < 6) {
       alert("Mật khẩu mới phải chứa ít nhất 6 ký tự!");
@@ -83,7 +83,7 @@ function ProfilePageContent() {
       return;
     }
 
-    const success = changePassword(oldPassword, newPassword);
+    const success = await changePassword(oldPassword, newPassword);
     if (success) {
       setOldPassword("");
       setNewPassword("");
