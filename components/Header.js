@@ -50,29 +50,33 @@ export default function Header({ onCartOpen }) {
         {/* Action icons / Account dropdown */}
         <div className="header-actions">
           {/* Wishlist Button */}
-          <Link
-            href="/profile?tab=wishlist"
-            className="wishlist-btn"
-            aria-label="Sản phẩm yêu thích"
-          >
-            <i className="fa-regular fa-heart"></i>
-            {isClient && wishlist.length > 0 && (
-              <span className="wishlist-badge">{wishlist.length}</span>
-            )}
-          </Link>
+          {isClient && loggedInUser?.role !== "admin" && (
+            <Link
+              href="/profile?tab=wishlist"
+              className="wishlist-btn"
+              aria-label="Sản phẩm yêu thích"
+            >
+              <i className="fa-regular fa-heart"></i>
+              {wishlist.length > 0 && (
+                <span className="wishlist-badge">{wishlist.length}</span>
+              )}
+            </Link>
+          )}
 
           {/* Cart Button */}
-          <button
-            id="cart-btn"
-            className="cart-btn"
-            aria-label="Xem giỏ hàng"
-            onClick={onCartOpen}
-          >
-            <i className="fa-solid fa-bag-shopping"></i>
-            {isClient && totalCartQty > 0 && (
-              <span className="cart-badge">{totalCartQty}</span>
-            )}
-          </button>
+          {isClient && loggedInUser?.role !== "admin" && (
+            <button
+              id="cart-btn"
+              className="cart-btn"
+              aria-label="Xem giỏ hàng"
+              onClick={onCartOpen}
+            >
+              <i className="fa-solid fa-bag-shopping"></i>
+              {totalCartQty > 0 && (
+                <span className="cart-badge">{totalCartQty}</span>
+              )}
+            </button>
+          )}
 
           {/* User Account / Login Button */}
           {isClient && loggedInUser ? (
@@ -88,13 +92,16 @@ export default function Header({ onCartOpen }) {
                 <span>Chào, {loggedInUser.name.split(" ")[0]}</span>
               </button>
               <div className="user-dropdown-menu">
-                <Link href="/profile?tab=profile-info" className="user-dropdown-item">
-                  <i className="fa-solid fa-user-leaf"></i> Trang cá nhân
-                </Link>
-                <Link href="/profile?tab=orders" className="user-dropdown-item">
-                  <i className="fa-solid fa-clock-rotate-left"></i> Đơn hàng
-                </Link>
-                {loggedInUser.role === "admin" && (
+                {loggedInUser.role !== "admin" ? (
+                  <>
+                    <Link href="/profile?tab=profile-info" className="user-dropdown-item">
+                      <i className="fa-solid fa-user-leaf"></i> Trang cá nhân
+                    </Link>
+                    <Link href="/profile?tab=orders" className="user-dropdown-item">
+                      <i className="fa-solid fa-clock-rotate-left"></i> Đơn hàng
+                    </Link>
+                  </>
+                ) : (
                   <Link href="/admin" className="user-dropdown-item">
                     <i className="fa-solid fa-chart-line"></i> Quản trị Admin
                   </Link>

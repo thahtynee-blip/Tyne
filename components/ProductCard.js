@@ -4,7 +4,7 @@ import React, { useContext } from "react";
 import { AppContext } from "../context/AppContext";
 
 export default function ProductCard({ product, onDetailOpen, highlightQuery = "" }) {
-  const { addToCart, wishlist, toggleWishlist } = useContext(AppContext);
+  const { addToCart, wishlist, toggleWishlist, loggedInUser } = useContext(AppContext);
 
   const isLiked = wishlist.includes(product.id);
 
@@ -66,13 +66,15 @@ export default function ProductCard({ product, onDetailOpen, highlightQuery = ""
         <span className="product-badge">{product.categoryName}</span>
         
         {/* Heart button */}
-        <button
-          className={`wishlist-toggle-btn ${isLiked ? "active" : ""}`}
-          onClick={handleHeartClick}
-          aria-label="Yêu thích sản phẩm"
-        >
-          <i className={`${isLiked ? "fa-solid" : "fa-regular"} fa-heart`}></i>
-        </button>
+        {loggedInUser?.role !== "admin" && (
+          <button
+            className={`wishlist-toggle-btn ${isLiked ? "active" : ""}`}
+            onClick={handleHeartClick}
+            aria-label="Yêu thích sản phẩm"
+          >
+            <i className={`${isLiked ? "fa-solid" : "fa-regular"} fa-heart`}></i>
+          </button>
+        )}
       </div>
 
       <div className="product-info">
@@ -86,13 +88,15 @@ export default function ProductCard({ product, onDetailOpen, highlightQuery = ""
         <p className="product-desc">{product.description}</p>
         <div className="product-footer">
           <span className="product-price">{formatPrice(product.price)}</span>
-          <button
-            className="add-to-cart-btn"
-            onClick={handleAddToCart}
-            aria-label="Thêm vào giỏ hàng"
-          >
-            <i className="fa-solid fa-plus"></i>
-          </button>
+          {loggedInUser?.role !== "admin" && (
+            <button
+              className="add-to-cart-btn"
+              onClick={handleAddToCart}
+              aria-label="Thêm vào giỏ hàng"
+            >
+              <i className="fa-solid fa-plus"></i>
+            </button>
+          )}
         </div>
       </div>
     </article>

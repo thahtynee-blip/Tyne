@@ -52,13 +52,18 @@ function ProfilePageContent() {
 
   // Auth Protection (only runs on client side after loading)
   useEffect(() => {
-    if (isClient && !loggedInUser) {
-      alert("Vui lòng đăng nhập để truy cập trang cá nhân.");
-      router.push("/login");
+    if (isClient) {
+      if (!loggedInUser) {
+        alert("Vui lòng đăng nhập để truy cập trang cá nhân.");
+        router.push("/login");
+      } else if (loggedInUser.role === "admin") {
+        alert("Tài khoản Admin không có quyền truy cập trang cá nhân khách hàng.");
+        router.push("/admin");
+      }
     }
   }, [loggedInUser, isClient]);
 
-  if (!isClient || !loggedInUser) {
+  if (!isClient || !loggedInUser || loggedInUser.role === "admin") {
     return <div className="container" style={{ padding: "80px 24px", textAlign: "center" }}>Đang tải thông tin tài khoản...</div>;
   }
 
