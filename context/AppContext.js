@@ -89,14 +89,30 @@ export const AppProvider = ({ children }) => {
       setLoggedInUser(parsedUser);
     }
 
-    // Initialize orders
-    let storedOrders = localStorage.getItem("minishop_orders");
-    if (storedOrders) {
-      setOrders(JSON.parse(storedOrders));
-    } else {
-      // Mock orders list
-      setOrders([]);
-    }
+    // Initialize orders from Supabase, fallback to localStorage
+    const fetchOrders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("Order")
+          .select("*")
+          .order("createdAt", { ascending: false });
+        
+        if (error) {
+          console.error("Error loading orders from Supabase:", error);
+          const stored = localStorage.getItem("minishop_orders");
+          if (stored) setOrders(JSON.parse(stored));
+        } else if (data) {
+          setOrders(data);
+          localStorage.setItem("minishop_orders", JSON.stringify(data));
+        }
+      } catch (err) {
+        console.error("Failed to fetch orders:", err);
+        const stored = localStorage.getItem("minishop_orders");
+        if (stored) setOrders(JSON.parse(stored));
+      }
+    };
+
+    fetchOrders();
   }, []);
 
   // --- Utility Toast Handler (Client side) ---
@@ -291,7 +307,7 @@ export const AppProvider = ({ children }) => {
   };
 
   // --- Order placement ---
-  const placeOrder = (shippingInfo) => {
+  const placeOrder = async (shippingInfo) => {
     if (cart.length === 0) return false;
 
     const newOrder = {
@@ -306,10 +322,30 @@ export const AppProvider = ({ children }) => {
         name: loggedInUser?.name || "Khách vãng lai",
         phone: loggedInUser?.phone || "",
         address: loggedInUser?.address || ""
-      }
+      },
+      items: cart
     };
 
-    const updatedOrders = [...orders, newOrder];
+    // Insert into Supabase Order table
+    const { error } = await supabase.from("Order").insert({
+      id: newOrder.id,
+      date: newOrder.date,
+      products: newOrder.products,
+      total: newOrder.total,
+      status: newOrder.status,
+      statusName: newOrder.statusName,
+      userEmail: newOrder.userEmail,
+      shippingInfo: newOrder.shippingInfo,
+      items: newOrder.items
+    });
+
+    if (error) {
+      console.error("Error inserting order in Supabase:", error);
+      showToast("Lỗi lưu đơn hàng lên cơ sở dữ liệu!", "error");
+      return false;
+    }
+
+    const updatedOrders = [newOrder, ...orders];
     setOrders(updatedOrders);
     localStorage.setItem("minishop_orders", JSON.stringify(updatedOrders));
 
@@ -390,20 +426,34 @@ export const AppProvider = ({ children }) => {
     showToast("Đã xóa sản phẩm thành công.", "info");
   };
 
-  const adminCycleOrderStatus = (orderId) => {
+  const adminCycleOrderStatus = async (orderId) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    let nextStatus = "processing";
+    let nextName = "Đang xử lý";
+
+    if (order.status === "processing") {
+      nextStatus = "shipping";
+      nextName = "Đang giao hàng";
+    } else if (order.status === "shipping") {
+      nextStatus = "completed";
+      nextName = "Đã giao hàng";
+    }
+
+    const { error } = await supabase
+      .from("Order")
+      .update({ status: nextStatus, statusName: nextName })
+      .eq("id", orderId);
+
+    if (error) {
+      console.error("Error updating order status in Supabase:", error);
+      showToast("Lỗi cập nhật trạng thái đơn hàng trên cơ sở dữ liệu!", "error");
+      return;
+    }
+
     const updatedOrders = orders.map(o => {
       if (o.id === orderId) {
-        let nextStatus = "processing";
-        let nextName = "Đang xử lý";
-
-        if (o.status === "processing") {
-          nextStatus = "shipping";
-          nextName = "Đang giao hàng";
-        } else if (o.status === "shipping") {
-          nextStatus = "completed";
-          nextName = "Đã giao hàng";
-        }
-
         return { ...o, status: nextStatus, statusName: nextName };
       }
       return o;
@@ -412,8 +462,7 @@ export const AppProvider = ({ children }) => {
     setOrders(updatedOrders);
     localStorage.setItem("minishop_orders", JSON.stringify(updatedOrders));
     
-    const changed = updatedOrders.find(o => o.id === orderId);
-    showToast(`Đã chuyển trạng thái đơn ${orderId} thành "${changed?.statusName}"`, "info");
+    showToast(`Đã chuyển trạng thái đơn ${orderId} thành "${nextName}"`, "info");
   };
 
   return (

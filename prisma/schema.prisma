@@ -26,3 +26,16 @@ model Product {
   reviewsCount Int
   specs        Json
 }
+
+model Order {
+  id           String   @id @default(uuid())
+  date         String
+  products     String
+  total        Float
+  status       String   @default("processing")
+  statusName   String   @default("Đang xử lý")
+  userEmail    String
+  shippingInfo Json
+  items        Json
+  createdAt    DateTime @default(now())
+}
