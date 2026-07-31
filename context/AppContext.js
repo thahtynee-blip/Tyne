@@ -255,6 +255,13 @@ export const AppProvider = ({ children }) => {
   const logoutUser = () => {
     setLoggedInUser(null);
     localStorage.removeItem("minishop_logged_in_user");
+    
+    // Clear cart and wishlist on logout to avoid carrying over data to the next user
+    setCart([]);
+    setWishlist([]);
+    localStorage.removeItem("minishop_cart");
+    localStorage.removeItem("minishop_wishlist");
+    
     showToast("Đã đăng xuất tài khoản.", "info");
   };
 
