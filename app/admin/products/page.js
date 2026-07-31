@@ -5,6 +5,25 @@ import { AppContext } from "../../../context/AppContext";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
+const AVAILABLE_IMAGES = [
+  { value: "/assets/images/products/do-thu-cong/gio-may-dan.jpg", label: "Giỏ mây đan (Đồ thủ công)" },
+  { value: "/assets/images/products/do-thu-cong/khay-go-hoa-van.jpg", label: "Khay gỗ hoa văn (Đồ thủ công)" },
+  { value: "/assets/images/products/do-thu-cong/khay-go-trang-tri.jpg", label: "Khay gỗ trang trí (Đồ thủ công)" },
+  { value: "/assets/images/products/do-thu-cong/tranh-treo-macrame.jpg", label: "Tranh treo Macrame (Đồ thủ công)" },
+  
+  { value: "/assets/images/products/do-my-nghe/binh-gom-trang-tri.jpg", label: "Bình gốm trang trí (Đồ mỹ nghệ)" },
+  { value: "/assets/images/products/do-my-nghe/bo-binh-gom-minimal.jpg", label: "Bộ bình gốm Minimal (Đồ mỹ nghệ)" },
+  { value: "/assets/images/products/do-my-nghe/den-long-tre.jpg", label: "Đèn lồng tre (Đồ mỹ nghệ)" },
+  { value: "/assets/images/products/do-my-nghe/den-tre-thu-cong.jpg", label: "Đèn tre thủ công (Đồ mỹ nghệ)" },
+  { value: "/assets/images/products/do-my-nghe/hop-son-mai.png", label: "Hộp sơn mài (Đồ mỹ nghệ)" },
+  { value: "/assets/images/products/do-my-nghe/khay-kham-trai.png", label: "Khay khảm trai (Đồ mỹ nghệ)" },
+  
+  { value: "/assets/images/products/noi-that-gia-dung/bo-ban-an-go.jpg", label: "Bộ bàn ăn gỗ (Nội thất)" },
+  { value: "/assets/images/products/noi-that-gia-dung/chau-cay-de-ban.jpg", label: "Chậu cây để bàn (Nội thất)" },
+  { value: "/assets/images/products/noi-that-gia-dung/ke-go-trang-tri.jpg", label: "Kệ gỗ trang trí (Nội thất)" },
+  { value: "/assets/images/products/noi-that-gia-dung/sofa-phong-khach.jpg", label: "Sofa phòng khách (Nội thất)" }
+];
+
 export default function AdminProductsPage() {
   const {
     isClient,
@@ -119,7 +138,7 @@ export default function AdminProductsPage() {
     };
 
     const finalProduct = {
-      id: editingProduct ? editingProduct.id : Date.now(),
+      id: editingProduct ? editingProduct.id : (products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1),
       name: name.trim(),
       category: category,
       categoryName: categoryNames[category],
@@ -355,7 +374,7 @@ export default function AdminProductsPage() {
 
               {/* Image Input Selection + Preview */}
               <div className="form-group" style={{ border: "1px dashed rgba(0,0,0,0.1)", padding: "16px", borderRadius: "8px", background: "rgba(0,0,0,0.01)" }}>
-                <label style={{ display: "block", marginBottom: "8px" }}>Hình ảnh sản phẩm (Xem trước và tải lên)</label>
+                <label style={{ display: "block", marginBottom: "8px" }}>Hình ảnh sản phẩm (Chọn từ thư viện assets) *</label>
                 <div style={{ display: "flex", gap: "16px", alignItems: "center" }}>
                   {imagePreview && (
                     <img
@@ -364,12 +383,23 @@ export default function AdminProductsPage() {
                       style={{ width: "64px", height: "64px", objectFit: "cover", borderRadius: "6px" }}
                     />
                   )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    style={{ fontSize: "0.85rem" }}
-                  />
+                  <select
+                    className="form-control"
+                    value={image}
+                    onChange={(e) => {
+                      setImage(e.target.value);
+                      setImagePreview(e.target.value);
+                    }}
+                    style={{ background: "#fff", flex: 1 }}
+                    required
+                  >
+                    <option value="">-- Chọn hình ảnh sản phẩm --</option>
+                    {AVAILABLE_IMAGES.map((img) => (
+                      <option key={img.value} value={img.value}>
+                        {img.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
