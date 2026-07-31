@@ -113,35 +113,38 @@ export const AppProvider = ({ children }) => {
       }
     });
 
-    // Initialize orders from Supabase, fallback to localStorage
-    const fetchOrders = async () => {
-      try {
-        const { data, error } = await supabase
-          .from("Order")
-          .select("*")
-          .order("createdAt", { ascending: false });
-        
-        if (error) {
-          console.error("Error loading orders from Supabase:", error);
-          const stored = localStorage.getItem("minishop_orders");
-          if (stored) setOrders(JSON.parse(stored));
-        } else if (data) {
-          setOrders(data);
-          localStorage.setItem("minishop_orders", JSON.stringify(data));
-        }
-      } catch (err) {
-        console.error("Failed to fetch orders:", err);
-        const stored = localStorage.getItem("minishop_orders");
-        if (stored) setOrders(JSON.parse(stored));
-      }
-    };
-
-    fetchOrders();
-
     return () => {
       if (subscription) subscription.unsubscribe();
     };
   }, []);
+
+  // Initialize orders from Supabase, fallback to localStorage
+  const fetchOrders = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("Order")
+        .select("*")
+        .order("createdAt", { ascending: false });
+      
+      if (error) {
+        console.error("Error loading orders from Supabase:", error);
+        const stored = localStorage.getItem("minishop_orders");
+        if (stored) setOrders(JSON.parse(stored));
+      } else if (data) {
+        setOrders(data);
+        localStorage.setItem("minishop_orders", JSON.stringify(data));
+      }
+    } catch (err) {
+      console.error("Failed to fetch orders:", err);
+      const stored = localStorage.getItem("minishop_orders");
+      if (stored) setOrders(JSON.parse(stored));
+    }
+  };
+
+  // Re-fetch orders when the loggedInUser session changes (e.g. logging in as Admin)
+  useEffect(() => {
+    fetchOrders();
+  }, [loggedInUser]);
 
   // --- Utility Toast Handler (Client side) ---
   const showToast = (message, type = "success") => {
