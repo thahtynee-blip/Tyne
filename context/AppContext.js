@@ -15,6 +15,7 @@ export const AppProvider = ({ children }) => {
   const [users, setUsers] = useState([]);
   const [loggedInUser, setLoggedInUser] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [profiles, setProfiles] = useState([]);
   const [isClient, setIsClient] = useState(false);
 
   // Initialize state from localStorage (only run in client side)
@@ -82,7 +83,10 @@ export const AppProvider = ({ children }) => {
               .insert({
                 id: user.id,
                 email: user.email,
-                role: "user"
+                role: "user",
+                name: metadata.name || user.email.split("@")[0],
+                phone: metadata.phone || "",
+                address: metadata.address || ""
               })
               .select("role")
               .single();
@@ -141,9 +145,39 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  // Re-fetch orders when the loggedInUser session changes (e.g. logging in as Admin)
+  // Initialize profiles from Supabase for Admin
+  const fetchProfiles = async () => {
+    if (!loggedInUser || loggedInUser.role !== "admin") return;
+    try {
+      const { data, error } = await supabase
+        .from("Profile")
+        .select("*")
+        .order("createdAt", { ascending: false });
+      if (!error && data) {
+        setProfiles(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch profiles:", err);
+    }
+  };
+
+  const adminUpdateUserRole = async (userId, newRole) => {
+    const { error } = await supabase
+      .from("Profile")
+      .update({ role: newRole })
+      .eq("id", userId);
+    if (!error) {
+      setProfiles(prev => prev.map(p => p.id === userId ? { ...p, role: newRole } : p));
+      showToast("Đã cập nhật vai trò thành viên thành công!", "success");
+    } else {
+      showToast("Lỗi cập nhật vai trò!", "error");
+    }
+  };
+
+  // Re-fetch orders and profiles when the loggedInUser session changes (e.g. logging in as Admin)
   useEffect(() => {
     fetchOrders();
+    fetchProfiles();
   }, [loggedInUser]);
 
   // --- Utility Toast Handler (Client side) ---
@@ -347,6 +381,12 @@ export const AppProvider = ({ children }) => {
     }
 
     if (loggedInUser) {
+      // Ghi song song vào bảng Profile trên Supabase
+      await supabase
+        .from("Profile")
+        .update({ name, phone, address })
+        .eq("id", loggedInUser.id);
+
       const updatedUser = { ...loggedInUser, name, phone, address };
       setLoggedInUser(updatedUser);
       localStorage.setItem("minishop_logged_in_user", JSON.stringify(updatedUser));
@@ -538,6 +578,7 @@ export const AppProvider = ({ children }) => {
         users,
         loggedInUser,
         orders,
+        profiles,
         addToCart,
         removeFromCart,
         updateCartQuantity,
@@ -552,6 +593,7 @@ export const AppProvider = ({ children }) => {
         adminUpdateProduct,
         adminDeleteProduct,
         adminCycleOrderStatus,
+        adminUpdateUserRole,
         showToast
       }}
     >
