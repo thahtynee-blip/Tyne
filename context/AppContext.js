@@ -215,6 +215,30 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const adminCreateUser = async (userData) => {
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(userData),
+      });
+
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setProfiles(prev => [result.profile, ...prev]);
+        showToast("Đã tạo thành công tài khoản thành viên mới!", "success");
+        return true;
+      } else {
+        showToast(result.error || "Lỗi khi tạo tài khoản!", "error");
+        return false;
+      }
+    } catch (err) {
+      console.error("Create user error:", err);
+      showToast("Lỗi kết nối máy chủ khi tạo người dùng!", "error");
+      return false;
+    }
+  };
+
   // Re-fetch orders and profiles when the loggedInUser session changes (e.g. logging in as Admin)
   useEffect(() => {
     fetchOrders();
@@ -637,6 +661,7 @@ export const AppProvider = ({ children }) => {
         adminUpdateUserRole,
         adminUpdateUserProfile,
         adminDeleteUser,
+        adminCreateUser,
         showToast
       }}
     >
