@@ -279,7 +279,13 @@ export default function ChatWidget() {
                       {msg.content}
                     </div>
                     <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "4px", padding: "0 4px" }}>
-                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      {(() => {
+                        if (!msg.createdAt) return "";
+                        let str = String(msg.createdAt);
+                        if (!str.endsWith("Z") && !str.includes("+")) str += "Z";
+                        const d = new Date(str);
+                        return isNaN(d.getTime()) ? "" : d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" });
+                      })()}
                     </span>
                   </div>
                 );

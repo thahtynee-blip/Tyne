@@ -261,7 +261,13 @@ export default function AdminChatsManagement() {
                           {cust.name}
                         </span>
                         <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                          {new Date(cust.lastTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          {(() => {
+                            if (!cust.lastTime) return "";
+                            let str = String(cust.lastTime);
+                            if (!str.endsWith("Z") && !str.includes("+")) str += "Z";
+                            const d = new Date(str);
+                            return isNaN(d.getTime()) ? "" : d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" });
+                          })()}
                         </span>
                       </div>
                       <div style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginBottom: "4px" }}>
@@ -350,7 +356,13 @@ export default function AdminChatsManagement() {
                           {msg.content}
                         </div>
                         <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", marginTop: "4px" }}>
-                          {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          {(() => {
+                            if (!msg.createdAt) return "";
+                            let str = String(msg.createdAt);
+                            if (!str.endsWith("Z") && !str.includes("+")) str += "Z";
+                            const d = new Date(str);
+                            return isNaN(d.getTime()) ? "" : d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" });
+                          })()}
                         </span>
                       </div>
                     );
