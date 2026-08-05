@@ -8,6 +8,7 @@ import Link from "next/link";
 export default function AdminUsersManagement() {
   const {
     isClient,
+    authLoading,
     loggedInUser,
     logoutUser,
     profiles,
@@ -38,13 +39,15 @@ export default function AdminUsersManagement() {
 
   // Auth protection for Admin
   useEffect(() => {
-    if (isClient && (!loggedInUser || loggedInUser.role !== "admin")) {
-      alert("Quyền truy cập bị từ chối. Chỉ dành cho Quản trị viên.");
-      router.push("/login");
+    if (isClient && !authLoading) {
+      if (!loggedInUser || loggedInUser.role !== "admin") {
+        alert("Quyền truy cập bị từ chối. Chỉ dành cho Quản trị viên.");
+        router.push("/login");
+      }
     }
-  }, [loggedInUser, isClient]);
+  }, [loggedInUser, isClient, authLoading, router]);
 
-  if (!isClient || !loggedInUser || loggedInUser.role !== "admin") {
+  if (!isClient || authLoading || !loggedInUser || loggedInUser.role !== "admin") {
     return <div className="container" style={{ padding: "80px 24px", textAlign: "center" }}>Đang tải trang quản lý thành viên...</div>;
   }
 

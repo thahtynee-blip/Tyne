@@ -9,7 +9,9 @@ import Link from "next/link";
 function ProfilePageContent() {
   const {
     isClient,
+    authLoading,
     loggedInUser,
+    logoutUser,
     products,
     wishlist,
     orders,
@@ -33,7 +35,7 @@ function ProfilePageContent() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
-  // Sync tab parameter from URL
+  // Tab Sync from Query Param
   useEffect(() => {
     const tabParam = searchParams.get("tab");
     if (tabParam) {
@@ -50,9 +52,9 @@ function ProfilePageContent() {
     }
   }, [loggedInUser]);
 
-  // Auth Protection (only runs on client side after loading)
+  // Auth Protection (only runs on client side after auth check completes)
   useEffect(() => {
-    if (isClient) {
+    if (isClient && !authLoading) {
       if (!loggedInUser) {
         alert("Vui lòng đăng nhập để truy cập trang cá nhân.");
         router.push("/login");
@@ -61,9 +63,9 @@ function ProfilePageContent() {
         router.push("/admin");
       }
     }
-  }, [loggedInUser, isClient]);
+  }, [loggedInUser, isClient, authLoading, router]);
 
-  if (!isClient || !loggedInUser || loggedInUser.role === "admin") {
+  if (!isClient || authLoading || !loggedInUser || loggedInUser.role === "admin") {
     return <div className="container" style={{ padding: "80px 24px", textAlign: "center" }}>Đang tải thông tin tài khoản...</div>;
   }
 

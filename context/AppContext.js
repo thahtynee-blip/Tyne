@@ -17,10 +17,18 @@ export const AppProvider = ({ children }) => {
   const [orders, setOrders] = useState([]);
   const [profiles, setProfiles] = useState([]);
   const [isClient, setIsClient] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
 
   // Initialize state from localStorage (only run in client side)
   useEffect(() => {
     setIsClient(true);
+
+    let storedUser = localStorage.getItem("minishop_logged_in_user");
+    if (storedUser) {
+      try {
+        setLoggedInUser(JSON.parse(storedUser));
+      } catch (e) {}
+    }
 
     // Initialize products database from Supabase, fallback to localStorage
     const fetchProducts = async () => {
@@ -115,6 +123,7 @@ export const AppProvider = ({ children }) => {
         setLoggedInUser(null);
         localStorage.removeItem("minishop_logged_in_user");
       }
+      setAuthLoading(false);
     });
 
     return () => {
@@ -637,6 +646,7 @@ export const AppProvider = ({ children }) => {
     <AppContext.Provider
       value={{
         isClient,
+        authLoading,
         products,
         cart,
         wishlist,

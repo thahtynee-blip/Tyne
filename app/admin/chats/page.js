@@ -9,7 +9,7 @@ import Link from "next/link";
 const supabase = createClient();
 
 export default function AdminChatsManagement() {
-  const { isClient, loggedInUser, logoutUser } = useContext(AppContext);
+  const { isClient, authLoading, loggedInUser, logoutUser } = useContext(AppContext);
   const router = useRouter();
 
   const [messages, setMessages] = useState([]);
@@ -19,15 +19,17 @@ export default function AdminChatsManagement() {
 
   // Auth protection for Admin
   useEffect(() => {
-    if (isClient && (!loggedInUser || loggedInUser.role !== "admin")) {
-      alert("Quyền truy cập bị từ chối. Chỉ dành cho Quản trị viên.");
-      router.push("/login");
+    if (isClient && !authLoading) {
+      if (!loggedInUser || loggedInUser.role !== "admin") {
+        alert("Quyền truy cập bị từ chối. Chỉ dành cho Quản trị viên.");
+        router.push("/login");
+      }
     }
-  }, [loggedInUser, isClient]);
+  }, [loggedInUser, isClient, authLoading, router]);
 
   // Fetch all chat messages & subscribe to Realtime
   useEffect(() => {
-    if (!isClient || !loggedInUser || loggedInUser.role !== "admin") return;
+    if (!isClient || authLoading || !loggedInUser || loggedInUser.role !== "admin") return;
 
     const fetchAllMessages = async () => {
       try {
@@ -76,7 +78,7 @@ export default function AdminChatsManagement() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, selectedCustomerId]);
 
-  if (!isClient || !loggedInUser || loggedInUser.role !== "admin") {
+  if (!isClient || authLoading || !loggedInUser || loggedInUser.role !== "admin") {
     return (
       <div className="container" style={{ padding: "80px 24px", textAlign: "center" }}>
         Đang tải trang tin nhắn hỗ trợ...
