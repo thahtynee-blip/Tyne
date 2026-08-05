@@ -11,11 +11,20 @@ export default function AdminUsersManagement() {
     loggedInUser,
     logoutUser,
     profiles,
-    adminUpdateUserRole
+    adminUpdateUserProfile,
+    adminDeleteUser
   } = useContext(AppContext);
 
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Edit User States
+  const [editingUser, setEditingUser] = useState(null);
+  const [editName, setEditName] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+  const [editRole, setEditRole] = useState("user");
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Auth protection for Admin
   useEffect(() => {
@@ -34,19 +43,43 @@ export default function AdminUsersManagement() {
     router.push("/");
   };
 
-  const handleRoleToggle = (userId, currentRole, email) => {
+  const openEditModal = (user) => {
+    setEditingUser(user);
+    setEditName(user.name || "");
+    setEditPhone(user.phone || "");
+    setEditAddress(user.address || "");
+    setEditRole(user.role || "user");
+    setIsModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!editName.trim()) {
+      alert("Họ tên không được để trống!");
+      return;
+    }
+    const success = await adminUpdateUserProfile(editingUser.id, {
+      name: editName.trim(),
+      phone: editPhone.trim(),
+      address: editAddress.trim(),
+      role: editRole
+    });
+    if (success) {
+      setIsModalOpen(false);
+      setEditingUser(null);
+    }
+  };
+
+  const handleDeleteUser = async (userId, email) => {
     if (userId === loggedInUser.id) {
-      alert("Bạn không thể tự hạ quyền hoặc thay đổi vai trò của chính mình!");
+      alert("Bạn không thể tự xóa tài khoản quản trị của chính mình!");
       return;
     }
 
-    const targetRole = currentRole === "admin" ? "user" : "admin";
-    const confirmMessage = currentRole === "admin"
-      ? `Bạn có chắc chắn muốn gỡ quyền quản trị của tài khoản ${email}?`
-      : `Bạn có chắc chắn muốn nâng quyền quản trị (Admin) cho tài khoản ${email}?`;
-
+    const confirmMessage = `Bạn có chắc chắn muốn xóa VĨNH VIỄN tài khoản ${email}?\nHành động này sẽ xóa sạch thông tin đăng nhập và cơ sở dữ liệu trên Supabase và không thể khôi phục!`;
+    
     if (window.confirm(confirmMessage)) {
-      adminUpdateUserRole(userId, targetRole);
+      await adminDeleteUser(userId);
     }
   };
 
@@ -200,27 +233,51 @@ export default function AdminUsersManagement() {
                       {/* Date Joined */}
                       <td style={{ padding: "16px" }}>{formatDate(user.createdAt)}</td>
 
-                      {/* Actions */}
-                      <td style={{ padding: "16px", textAlign: "center" }}>
-                        <button
-                          onClick={() => handleRoleToggle(user.id, user.role, user.email)}
-                          disabled={user.id === loggedInUser.id}
-                          className="btn"
-                          style={{
-                            padding: "6px 12px",
-                            fontSize: "0.8rem",
-                            background: user.role === "admin" ? "#95a5a6" : "var(--primary-color)",
-                            color: "#fff",
-                            border: "none",
-                            borderRadius: "4px",
-                            cursor: user.id === loggedInUser.id ? "not-allowed" : "pointer",
-                            opacity: user.id === loggedInUser.id ? 0.6 : 1,
-                            fontWeight: "600",
-                            transition: "background 0.2s"
-                          }}
-                        >
-                          {user.role === "admin" ? "Gỡ Admin" : "Lên Admin"}
-                        </button>
+                      {/* Actions (Edit and Delete) */}
+                      <td style={{ padding: "16px" }}>
+                        <div style={{ display: "flex", gap: "8px", justifyContent: "center" }}>
+                          <button
+                            onClick={() => openEditModal(user)}
+                            className="btn"
+                            style={{
+                              padding: "6px 12px",
+                              background: "var(--primary-color)",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: "pointer",
+                              fontSize: "0.82rem",
+                              fontWeight: "600",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px"
+                            }}
+                          >
+                            <i className="fa-solid fa-pen-to-square"></i> Sửa
+                          </button>
+                          
+                          <button
+                            onClick={() => handleDeleteUser(user.id, user.email)}
+                            disabled={user.id === loggedInUser.id}
+                            className="btn"
+                            style={{
+                              padding: "6px 12px",
+                              background: "#e74c3c",
+                              color: "#fff",
+                              border: "none",
+                              borderRadius: "4px",
+                              cursor: user.id === loggedInUser.id ? "not-allowed" : "pointer",
+                              opacity: user.id === loggedInUser.id ? 0.5 : 1,
+                              fontSize: "0.82rem",
+                              fontWeight: "600",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px"
+                            }}
+                          >
+                            <i className="fa-solid fa-trash-can"></i> Xóa
+                          </button>
+                        </div>
                       </td>
 
                     </tr>
@@ -232,6 +289,191 @@ export default function AdminUsersManagement() {
 
         </div>
       </main>
+
+      {/* Edit User Modal Overlay */}
+      {isModalOpen && editingUser && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0, 0, 0, 0.4)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: "#fff",
+            padding: "30px",
+            borderRadius: "12px",
+            width: "100%",
+            maxWidth: "500px",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(0,0,0,0.08)", paddingBottom: "14px" }}>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: "700", color: "var(--text-main)", margin: 0 }}>
+                Chỉnh Sửa Thành Viên
+              </h3>
+              <button
+                onClick={() => { setIsModalOpen(false); setEditingUser(null); }}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "var(--text-muted)" }}
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleEditSubmit} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+              {/* Email (Readonly) */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "var(--text-muted)", marginBottom: "6px" }}>Email tài khoản</label>
+                <input
+                  type="email"
+                  value={editingUser.email}
+                  disabled
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(0,0,0,0.08)",
+                    background: "#f9f9f9",
+                    color: "#7f8c8d",
+                    cursor: "not-allowed",
+                    fontSize: "0.92rem"
+                  }}
+                />
+              </div>
+
+              {/* Name */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "var(--text-muted)", marginBottom: "6px" }}>Họ và tên *</label>
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Nhập họ tên"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(0,0,0,0.15)",
+                    outline: "none",
+                    fontSize: "0.92rem"
+                  }}
+                />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "var(--text-muted)", marginBottom: "6px" }}>Số điện thoại</label>
+                <input
+                  type="text"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  placeholder="Nhập số điện thoại"
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(0,0,0,0.15)",
+                    outline: "none",
+                    fontSize: "0.92rem"
+                  }}
+                />
+              </div>
+
+              {/* Address */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "var(--text-muted)", marginBottom: "6px" }}>Địa chỉ</label>
+                <input
+                  type="text"
+                  value={editAddress}
+                  onChange={(e) => setEditAddress(e.target.value)}
+                  placeholder="Nhập địa chỉ nhận hàng"
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(0,0,0,0.15)",
+                    outline: "none",
+                    fontSize: "0.92rem"
+                  }}
+                />
+              </div>
+
+              {/* Role Select */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "var(--text-muted)", marginBottom: "6px" }}>Vai trò hệ thống</label>
+                <select
+                  value={editRole}
+                  onChange={(e) => setEditRole(e.target.value)}
+                  disabled={editingUser.id === loggedInUser.id}
+                  style={{
+                    width: "100%",
+                    padding: "10px 14px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(0,0,0,0.15)",
+                    outline: "none",
+                    background: "#fff",
+                    cursor: editingUser.id === loggedInUser.id ? "not-allowed" : "pointer",
+                    fontSize: "0.92rem"
+                  }}
+                >
+                  <option value="user">User (Khách hàng)</option>
+                  <option value="admin">Admin (Quản trị viên)</option>
+                </select>
+                {editingUser.id === loggedInUser.id && (
+                  <span style={{ fontSize: "0.75rem", color: "#e74c3c", marginTop: "4px", display: "block" }}>
+                    Bạn không thể thay đổi vai trò của chính mình.
+                  </span>
+                )}
+              </div>
+
+              {/* Actions Footer */}
+              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "10px", borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: "16px" }}>
+                <button
+                  type="button"
+                  onClick={() => { setIsModalOpen(false); setEditingUser(null); }}
+                  style={{
+                    padding: "10px 18px",
+                    background: "#f1f2f6",
+                    color: "var(--text-main)",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: "600",
+                    fontSize: "0.9rem"
+                  }}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: "10px 18px",
+                    background: "var(--primary-color)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: "600",
+                    fontSize: "0.9rem"
+                  }}
+                >
+                  Lưu thay đổi
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
 
     </div>
   );
