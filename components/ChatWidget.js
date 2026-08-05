@@ -96,17 +96,23 @@ export default function ChatWidget() {
     const content = inputText.trim();
     setInputText("");
 
-    try {
-      const { error } = await supabase.from("Message").insert({
-        senderId: loggedInUser.id,
-        senderEmail: loggedInUser.email,
-        senderName: loggedInUser.name || loggedInUser.email.split("@")[0],
-        receiverId: "admin",
-        content: content,
-      });
+    const newMsg = {
+      id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      senderId: loggedInUser.id,
+      senderEmail: loggedInUser.email,
+      senderName: loggedInUser.name || loggedInUser.email.split("@")[0],
+      receiverId: "admin",
+      content: content,
+      createdAt: new Date().toISOString()
+    };
 
+    // Optimistic UI update
+    setMessages((prev) => [...prev, newMsg]);
+
+    try {
+      const { error } = await supabase.from("Message").insert(newMsg);
       if (error) {
-        console.error("Error sending message:", error);
+        console.error("Error sending message to Supabase:", error);
       }
     } catch (err) {
       console.error("Failed to send message:", err);

@@ -51,7 +51,7 @@ model Profile {
 }
 
 model Message {
-  id          String   @id @default(uuid())
+  id          String   @id @default(dbgenerated("gen_random_uuid()"))
   senderId    String
   senderEmail String
   senderName  String?

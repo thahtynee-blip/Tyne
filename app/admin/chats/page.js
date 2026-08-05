@@ -145,17 +145,23 @@ export default function AdminChatsManagement() {
     const content = replyText.trim();
     setReplyText("");
 
-    try {
-      const { error } = await supabase.from("Message").insert({
-        senderId: loggedInUser.id,
-        senderEmail: loggedInUser.email,
-        senderName: `Admin (${loggedInUser.name})`,
-        receiverId: activeCustomer.id,
-        content: content,
-      });
+    const newMsg = {
+      id: typeof crypto !== "undefined" && crypto.randomUUID ? crypto.randomUUID() : String(Date.now()),
+      senderId: loggedInUser.id,
+      senderEmail: loggedInUser.email,
+      senderName: `Admin (${loggedInUser.name})`,
+      receiverId: activeCustomer.id,
+      content: content,
+      createdAt: new Date().toISOString()
+    };
 
+    // Optimistic UI update
+    setMessages((prev) => [...prev, newMsg]);
+
+    try {
+      const { error } = await supabase.from("Message").insert(newMsg);
       if (error) {
-        console.error("Error sending admin reply:", error);
+        console.error("Error sending admin reply to Supabase:", error);
       }
     } catch (err) {
       console.error("Failed to send admin reply:", err);
