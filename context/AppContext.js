@@ -174,6 +174,47 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const adminUpdateUserProfile = async (userId, updatedData) => {
+    const { name, phone, address, role } = updatedData;
+    const { error } = await supabase
+      .from("Profile")
+      .update({ name, phone, address, role })
+      .eq("id", userId);
+    
+    if (!error) {
+      setProfiles(prev => prev.map(p => p.id === userId ? { ...p, name, phone, address, role } : p));
+      showToast("Đã cập nhật thông tin thành viên thành công!", "success");
+      return true;
+    } else {
+      showToast("Lỗi cập nhật thông tin thành viên!", "error");
+      return false;
+    }
+  };
+
+  const adminDeleteUser = async (userId) => {
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setProfiles(prev => prev.filter(p => p.id !== userId));
+        showToast("Đã xóa vĩnh viễn tài khoản thành viên khỏi hệ thống!", "success");
+        return true;
+      } else {
+        showToast(result.error || "Lỗi khi xóa tài khoản!", "error");
+        return false;
+      }
+    } catch (err) {
+      console.error("Delete user error:", err);
+      showToast("Lỗi kết nối máy chủ khi xóa người dùng!", "error");
+      return false;
+    }
+  };
+
   // Re-fetch orders and profiles when the loggedInUser session changes (e.g. logging in as Admin)
   useEffect(() => {
     fetchOrders();
@@ -594,6 +635,8 @@ export const AppProvider = ({ children }) => {
         adminDeleteProduct,
         adminCycleOrderStatus,
         adminUpdateUserRole,
+        adminUpdateUserProfile,
+        adminDeleteUser,
         showToast
       }}
     >
