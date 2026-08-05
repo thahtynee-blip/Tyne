@@ -6,6 +6,7 @@ import Header from "./Header";
 import Footer from "./Footer";
 import CartModal from "./CartModal";
 import ProductDetailModal from "./ProductDetailModal";
+import ChatWidget from "./ChatWidget";
 
 export default function ClientLayout({ children }) {
   const [cartOpen, setCartOpen] = useState(false);
@@ -28,6 +29,7 @@ export default function ClientLayout({ children }) {
       <Footer />
       <CartModal isOpen={cartOpen} onClose={() => setCartOpen(false)} />
       <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
+      <ChatWidget />
       <div id="toast-container" className="toast-container"></div>
     </AppProvider>
   );
