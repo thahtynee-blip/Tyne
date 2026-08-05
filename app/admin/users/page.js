@@ -12,7 +12,8 @@ export default function AdminUsersManagement() {
     logoutUser,
     profiles,
     adminUpdateUserProfile,
-    adminDeleteUser
+    adminDeleteUser,
+    adminCreateUser
   } = useContext(AppContext);
 
   const router = useRouter();
@@ -25,6 +26,15 @@ export default function AdminUsersManagement() {
   const [editAddress, setEditAddress] = useState("");
   const [editRole, setEditRole] = useState("user");
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Create User States
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [createEmail, setCreateEmail] = useState("");
+  const [createPassword, setCreatePassword] = useState("");
+  const [createName, setCreateName] = useState("");
+  const [createPhone, setCreatePhone] = useState("");
+  const [createAddress, setCreateAddress] = useState("");
+  const [createRole, setCreateRole] = useState("user");
 
   // Auth protection for Admin
   useEffect(() => {
@@ -67,6 +77,37 @@ export default function AdminUsersManagement() {
     if (success) {
       setIsModalOpen(false);
       setEditingUser(null);
+    }
+  };
+
+  const handleCreateSubmit = async (e) => {
+    e.preventDefault();
+    if (!createEmail.trim() || !createPassword) {
+      alert("Email và mật khẩu không được để trống!");
+      return;
+    }
+    if (createPassword.length < 6) {
+      alert("Mật khẩu phải chứa ít nhất 6 ký tự!");
+      return;
+    }
+
+    const success = await adminCreateUser({
+      email: createEmail.trim(),
+      password: createPassword,
+      name: createName.trim(),
+      phone: createPhone.trim(),
+      address: createAddress.trim(),
+      role: createRole
+    });
+
+    if (success) {
+      setIsCreateModalOpen(false);
+      setCreateEmail("");
+      setCreatePassword("");
+      setCreateName("");
+      setCreatePhone("");
+      setCreateAddress("");
+      setCreateRole("user");
     }
   };
 
@@ -134,7 +175,30 @@ export default function AdminUsersManagement() {
 
       {/* Admin Content Area */}
       <main className="admin-content" style={{ padding: "40px", background: "#f8f9fa" }}>
-        <h1 style={{ fontSize: "1.8rem", fontWeight: "700", color: "var(--text-main)", marginBottom: "30px" }}>Quản Lý Thành Viên</h1>
+        
+        {/* Header Title and Add User Button */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "30px" }}>
+          <h1 style={{ fontSize: "1.8rem", fontWeight: "700", color: "var(--text-main)", margin: 0 }}>Quản Lý Thành Viên</h1>
+          <button
+            onClick={() => setIsCreateModalOpen(true)}
+            className="btn"
+            style={{
+              padding: "10px 18px",
+              background: "var(--primary-color)",
+              color: "#fff",
+              border: "none",
+              borderRadius: "8px",
+              cursor: "pointer",
+              fontWeight: "600",
+              fontSize: "0.9rem",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px"
+            }}
+          >
+            <i className="fa-solid fa-user-plus"></i> Thêm thành viên
+          </button>
+        </div>
 
         {/* Metrics Row */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "24px", marginBottom: "40px" }}>
@@ -289,6 +353,206 @@ export default function AdminUsersManagement() {
 
         </div>
       </main>
+
+      {/* Create User Modal Overlay */}
+      {isCreateModalOpen && (
+        <div style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "rgba(0, 0, 0, 0.4)",
+          backdropFilter: "blur(4px)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          zIndex: 1000
+        }}>
+          <div style={{
+            background: "#fff",
+            padding: "30px",
+            borderRadius: "12px",
+            width: "100%",
+            maxWidth: "500px",
+            boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "20px"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(0,0,0,0.08)", paddingBottom: "14px" }}>
+              <h3 style={{ fontSize: "1.25rem", fontWeight: "700", color: "var(--text-main)", margin: 0 }}>
+                Thêm Thành Viên Mới
+              </h3>
+              <button
+                onClick={() => setIsCreateModalOpen(false)}
+                style={{ background: "none", border: "none", cursor: "pointer", fontSize: "1.2rem", color: "var(--text-muted)" }}
+              >
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+              
+              {/* Email */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "var(--text-muted)", marginBottom: "4px" }}>Email tài khoản *</label>
+                <input
+                  type="email"
+                  value={createEmail}
+                  onChange={(e) => setCreateEmail(e.target.value)}
+                  placeholder="Viết email đăng nhập (ví dụ: test@gmail.com)"
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(0,0,0,0.15)",
+                    outline: "none",
+                    fontSize: "0.9rem"
+                  }}
+                />
+              </div>
+
+              {/* Password */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "var(--text-muted)", marginBottom: "4px" }}>Mật khẩu đăng nhập *</label>
+                <input
+                  type="password"
+                  value={createPassword}
+                  onChange={(e) => setCreatePassword(e.target.value)}
+                  placeholder="Nhập mật khẩu (tối thiểu 6 ký tự)"
+                  required
+                  minLength={6}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(0,0,0,0.15)",
+                    outline: "none",
+                    fontSize: "0.9rem"
+                  }}
+                />
+              </div>
+
+              {/* Name */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "var(--text-muted)", marginBottom: "4px" }}>Họ và tên</label>
+                <input
+                  type="text"
+                  value={createName}
+                  onChange={(e) => setCreateName(e.target.value)}
+                  placeholder="Nhập họ và tên"
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(0,0,0,0.15)",
+                    outline: "none",
+                    fontSize: "0.9rem"
+                  }}
+                />
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "var(--text-muted)", marginBottom: "4px" }}>Số điện thoại</label>
+                <input
+                  type="text"
+                  value={createPhone}
+                  onChange={(e) => setCreatePhone(e.target.value)}
+                  placeholder="Nhập số điện thoại"
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(0,0,0,0.15)",
+                    outline: "none",
+                    fontSize: "0.9rem"
+                  }}
+                />
+              </div>
+
+              {/* Address */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "var(--text-muted)", marginBottom: "4px" }}>Địa chỉ</label>
+                <input
+                  type="text"
+                  value={createAddress}
+                  onChange={(e) => setCreateAddress(e.target.value)}
+                  placeholder="Nhập địa chỉ giao hàng"
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(0,0,0,0.15)",
+                    outline: "none",
+                    fontSize: "0.9rem"
+                  }}
+                />
+              </div>
+
+              {/* Role Select */}
+              <div>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: "600", color: "var(--text-muted)", marginBottom: "4px" }}>Vai trò hệ thống</label>
+                <select
+                  value={createRole}
+                  onChange={(e) => setCreateRole(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "9px 12px",
+                    borderRadius: "6px",
+                    border: "1px solid rgba(0,0,0,0.15)",
+                    outline: "none",
+                    background: "#fff",
+                    cursor: "pointer",
+                    fontSize: "0.9rem"
+                  }}
+                >
+                  <option value="user">User (Khách hàng)</option>
+                  <option value="admin">Admin (Quản trị viên)</option>
+                </select>
+              </div>
+
+              {/* Actions Footer */}
+              <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end", marginTop: "10px", borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: "16px" }}>
+                <button
+                  type="button"
+                  onClick={() => setIsCreateModalOpen(false)}
+                  style={{
+                    padding: "9px 16px",
+                    background: "#f1f2f6",
+                    color: "var(--text-main)",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: "600",
+                    fontSize: "0.85rem"
+                  }}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    padding: "9px 16px",
+                    background: "var(--primary-color)",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    fontWeight: "600",
+                    fontSize: "0.85rem"
+                  }}
+                >
+                  Tạo tài khoản
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Edit User Modal Overlay */}
       {isModalOpen && editingUser && (
