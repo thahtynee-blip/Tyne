@@ -13,6 +13,7 @@ export default function ChatWidget() {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
 
   // Auto scroll to bottom when messages update
@@ -113,6 +114,25 @@ export default function ChatWidget() {
       const { error } = await supabase.from("Message").insert(newMsg);
       if (error) {
         console.error("Error sending message to Supabase:", error);
+      } else {
+        // Trigger AI Assistant response API call
+        setIsTyping(true);
+        try {
+          await fetch("/api/chat/ai", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              userId: loggedInUser.id,
+              userEmail: loggedInUser.email,
+              userName: loggedInUser.name || loggedInUser.email.split("@")[0],
+              content: content
+            })
+          });
+        } catch (aiErr) {
+          console.error("AI Assistant API call error:", aiErr);
+        } finally {
+          setIsTyping(false);
+        }
       }
     } catch (err) {
       console.error("Failed to send message:", err);
@@ -290,6 +310,12 @@ export default function ChatWidget() {
                   </div>
                 );
               })
+            )}
+            {isTyping && (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", color: "var(--text-muted)", fontSize: "0.82rem", fontStyle: "italic", padding: "6px 12px", background: "rgba(0,0,0,0.03)", borderRadius: "12px", width: "fit-content" }}>
+                <i className="fa-solid fa-spinner fa-spin" style={{ color: "var(--primary-color)" }}></i>
+                <span>Trợ lý AI đang soạn tin...</span>
+              </div>
             )}
             <div ref={messagesEndRef} />
           </div>
