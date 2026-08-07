@@ -211,14 +211,15 @@ export default function AdminChatsManagement() {
       </aside>
 
       {/* Admin Main Chat Content Area */}
-      <main className="admin-content" style={{ padding: "30px", background: "#f8f9fa", display: "flex", flexDirection: "column", height: "90vh" }}>
-        <h1 style={{ fontSize: "1.8rem", fontWeight: "700", color: "var(--text-main)", marginBottom: "20px" }}>
+      <main className="admin-content" style={{ padding: "30px", background: "#f8f9fa", display: "flex", flexDirection: "column", height: "calc(100vh - 40px)", overflow: "hidden" }}>
+        <h1 style={{ fontSize: "1.8rem", fontWeight: "700", color: "var(--text-main)", marginBottom: "20px", flexShrink: 0 }}>
           Tin Nhắn Hỗ Trợ Khách Hàng
         </h1>
 
         {/* Split View Container */}
         <div style={{
           flex: 1,
+          minHeight: 0,
           background: "#fff",
           borderRadius: "12px",
           border: "1px solid rgba(0,0,0,0.06)",
@@ -229,8 +230,8 @@ export default function AdminChatsManagement() {
         }}>
           
           {/* Left Column: Customer Conversations List */}
-          <div style={{ borderRight: "1px solid rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", background: "#fff" }}>
-            <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(0,0,0,0.06)", background: "#fcfcfc" }}>
+          <div style={{ borderRight: "1px solid rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", background: "#fff", height: "100%", minHeight: 0, overflow: "hidden" }}>
+            <div style={{ padding: "16px 20px", borderBottom: "1px solid rgba(0,0,0,0.06)", background: "#fcfcfc", flexShrink: 0 }}>
               <h3 style={{ margin: 0, fontSize: "1.05rem", fontWeight: "600", color: "var(--text-main)" }}>
                 Hội thoại khách hàng ({customerList.length})
               </h3>
@@ -292,7 +293,7 @@ export default function AdminChatsManagement() {
           </div>
 
           {/* Right Column: Active Conversation Chat Thread */}
-          <div style={{ display: "flex", flexDirection: "column", background: "#f9fbfd" }}>
+          <div style={{ display: "flex", flexDirection: "column", background: "#f9fbfd", height: "100%", minHeight: 0, overflow: "hidden" }}>
             {activeCustomer ? (
               <>
                 {/* Chat Header */}
@@ -302,7 +303,8 @@ export default function AdminChatsManagement() {
                   borderBottom: "1px solid rgba(0,0,0,0.06)",
                   display: "flex",
                   alignItems: "center",
-                  gap: "12px"
+                  gap: "12px",
+                  flexShrink: 0
                 }}>
                   <div style={{
                     width: "42px",
@@ -329,7 +331,7 @@ export default function AdminChatsManagement() {
                 </div>
 
                 {/* Chat Message List */}
-                <div ref={chatContainerRef} style={{ flex: 1, padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div ref={chatContainerRef} style={{ flex: 1, minHeight: 0, padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "14px" }}>
                   {currentConversation.map((msg) => {
                     const isShopMsg = msg.senderId === loggedInUser.id || msg.senderId === "admin" || msg.senderId === "ai-assistant";
                     const isAiMsg = msg.senderId === "ai-assistant";
@@ -375,7 +377,7 @@ export default function AdminChatsManagement() {
                 </div>
 
                 {/* Reply Input Form */}
-                <form onSubmit={handleSendReply} style={{ padding: "16px 24px", background: "#fff", borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", gap: "12px" }}>
+                <form onSubmit={handleSendReply} style={{ padding: "16px 24px", background: "#fff", borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", gap: "12px", flexShrink: 0 }}>
                   <input
                     type="text"
                     placeholder={`Trả lời ${activeCustomer.name}...`}
