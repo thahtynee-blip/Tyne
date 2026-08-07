@@ -15,7 +15,7 @@ export default function AdminChatsManagement() {
   const [messages, setMessages] = useState([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [replyText, setReplyText] = useState("");
-  const messagesEndRef = useRef(null);
+  const chatContainerRef = useRef(null);
 
   // Auth protection for Admin
   useEffect(() => {
@@ -73,9 +73,11 @@ export default function AdminChatsManagement() {
     };
   }, [isClient, loggedInUser]);
 
-  // Auto scroll message box
+  // Auto scroll chat box internally without jumping the browser page
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [messages, selectedCustomerId]);
 
   if (!isClient || authLoading || !loggedInUser || loggedInUser.role !== "admin") {
@@ -92,12 +94,12 @@ export default function AdminChatsManagement() {
   };
 
   // Group conversations by customer
-  // A customer is any user who sent a message to admin, or received a message from admin
+  // A customer is any user who sent a message, or received a message from Admin/AI
   const customersMap = {};
   messages.forEach((msg) => {
     let custId, custEmail, custName;
 
-    if (msg.senderId !== loggedInUser.id && msg.senderId !== "admin") {
+    if (msg.senderId !== loggedInUser.id && msg.senderId !== "admin" && msg.senderId !== "ai-assistant") {
       custId = msg.senderId;
       custEmail = msg.senderEmail;
       custName = msg.senderName;
@@ -131,12 +133,12 @@ export default function AdminChatsManagement() {
   const activeCustomer =
     customerList.find((c) => c.id === selectedCustomerId) || customerList[0];
 
-  // Filter messages for active customer conversation
+  // Filter messages for active customer conversation (including AI Assistant replies)
   const currentConversation = activeCustomer
     ? messages.filter(
         (m) =>
-          (m.senderId === activeCustomer.id && (m.receiverId === "admin" || m.receiverId === loggedInUser.id)) ||
-          ((m.senderId === loggedInUser.id || m.senderId === "admin") && m.receiverId === activeCustomer.id)
+          m.senderId === activeCustomer.id ||
+          m.receiverId === activeCustomer.id
       )
     : [];
 
@@ -327,27 +329,30 @@ export default function AdminChatsManagement() {
                 </div>
 
                 {/* Chat Message List */}
-                <div style={{ flex: 1, padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "14px" }}>
+                <div ref={chatContainerRef} style={{ flex: 1, padding: "24px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "14px" }}>
                   {currentConversation.map((msg) => {
-                    const isAdminMsg = msg.senderId === loggedInUser.id || msg.senderId === "admin";
+                    const isShopMsg = msg.senderId === loggedInUser.id || msg.senderId === "admin" || msg.senderId === "ai-assistant";
+                    const isAiMsg = msg.senderId === "ai-assistant";
+
                     return (
                       <div
                         key={msg.id}
                         style={{
                           display: "flex",
                           flexDirection: "column",
-                          alignItems: isAdminMsg ? "flex-end" : "flex-start"
+                          alignItems: isShopMsg ? "flex-end" : "flex-start"
                         }}
                       >
-                        <span style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "4px" }}>
-                          {msg.senderName || msg.senderEmail}
+                        <span style={{ fontSize: "0.75rem", color: isAiMsg ? "#27ae60" : "var(--text-muted)", marginBottom: "4px", fontWeight: isAiMsg ? "600" : "normal" }}>
+                          {isAiMsg ? "🤖 Trợ Lý AI MiniShop" : (msg.senderName || msg.senderEmail)}
                         </span>
                         <div style={{
                           maxWidth: "70%",
                           padding: "12px 18px",
-                          borderRadius: isAdminMsg ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
-                          background: isAdminMsg ? "var(--primary-color)" : "#fff",
-                          color: isAdminMsg ? "#fff" : "var(--text-main)",
+                          borderRadius: isShopMsg ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                          background: isAiMsg ? "#e8f5e9" : (isShopMsg ? "var(--primary-color)" : "#fff"),
+                          color: isAiMsg ? "#1b5e20" : (isShopMsg ? "#fff" : "var(--text-main)"),
+                          border: isAiMsg ? "1px solid #c8e6c9" : "none",
                           boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
                           fontSize: "0.95rem",
                           lineHeight: "1.4",
@@ -367,7 +372,6 @@ export default function AdminChatsManagement() {
                       </div>
                     );
                   })}
-                  <div ref={messagesEndRef} />
                 </div>
 
                 {/* Reply Input Form */}
